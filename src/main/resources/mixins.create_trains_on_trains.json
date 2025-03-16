@@ -3,7 +3,7 @@
   "minVersion": "0.8",
   "package": "sindarin.create_trains_on_trains.mixin",
   "compatibilityLevel": "JAVA_17",
-  "refmap": "create_trains_on_trains.refmap.json",
+  "refmap": "mixins.create_trains_on_trains.refmap.json",
   "mixins": [
     "MixinCarriageContraption"
   ]
