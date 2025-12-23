@@ -1,6 +1,8 @@
 package sindarin.create_trains_on_trains.mixin;
 
+import com.llamalad7.mixinextras.injector.ModifyExpressionValue;
 import com.simibubi.create.content.contraptions.Contraption;
+import com.simibubi.create.content.trains.bogey.AbstractBogeyBlock;
 import com.simibubi.create.content.trains.entity.CarriageContraption;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
@@ -20,10 +22,12 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 public abstract class MixinCarriageContraption extends Contraption {
     @Shadow private Direction assemblyDirection;
     
-    @Inject(method = "capture", at = @At(value = "INVOKE_ASSIGN", target = "Lcom/simibubi/create/content/trains/bogey/AbstractBogeyBlock;captureBlockEntityForTrain()Z"), cancellable = true)
-    private void addNewBogey(Level world, BlockPos pos, CallbackInfoReturnable<Pair<StructureTemplate.StructureBlockInfo, BlockEntity>> cir){
-        BlockState blockState = world.getBlockState(pos);
+    @Inject(method = "capture", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/level/block/state/BlockState;getBlock()Lnet/minecraft/world/level/block/Block;", remap = true), cancellable = true)
+    private void create_trains_on_trains$addNewBogey(Level world, BlockPos pos, CallbackInfoReturnable<Pair<StructureTemplate.StructureBlockInfo, BlockEntity>> cir){
         if (pos == this.anchor) return; // This is the anchor; no intervention needed. Return from the mixin and let the original code do its job.
+
+        BlockState blockState = world.getBlockState(pos);
+        if (!(blockState.getBlock() instanceof AbstractBogeyBlock<?>)) return; // Not a bogey
         
         // Check if the bogey is in the same direction as we expect true carriage bogeys to be
         Vec3i bogeyDir = this.anchor.subtract(pos);
@@ -43,5 +47,11 @@ public abstract class MixinCarriageContraption extends Contraption {
             cir.setReturnValue(Pair.of(new StructureTemplate.StructureBlockInfo(pos, blockState, getBlockEntityNBT(world, pos)),
                     world.getBlockEntity(pos)));
         }
+    }
+
+    @ModifyExpressionValue(method = "readBlockEntity", at = @At(value = "INVOKE", target = "Lcom/simibubi/create/content/trains/bogey/AbstractBogeyBlock;captureBlockEntityForTrain()Z"))
+    private boolean create_trains_on_trains$renderBogeyAgain(boolean original){
+        return true; // This value normally always returns false s.t. bogeys aren't rendered twice,
+        // but since we have more bogeys than just the (1-2) that make up a carriage that won't work
     }
 }
